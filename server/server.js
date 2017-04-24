@@ -10,11 +10,12 @@ app.set("config", config);
 var PORT = (!Number.isNaN(parseInt(process.argv[2], 10))) ? parseInt(process.argv[2], 10) : config.PORT;
 config.PORT = PORT;
 
-// var GameServer = require("./server/js/GameServer.js");
-// var gs = new GameServer();
-// app.set("GameServer", gs);
+var Party = require("./server/Party.js");
+var party = new Party({config:config});
+party.start();
+app.set("Party", party);
 
-// var websocket = require("./server/websocket.js")(app, wss);
+var websocket = require("./server/websocket.js")(app, wss);
 
 server.on('request', app);
 server.listen(PORT, (err) => { console.log(`SERVER LISTENING ON PORT ${server.address().port}`)});

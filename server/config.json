@@ -2,5 +2,7 @@
 	"PORT":54321,
 	"password":null,
 	"lobbyServers":[],
-	"maxPlayers":10
+	"maxPlayers":10,
+	"physic":30,
+	"snapshot":10
 }
