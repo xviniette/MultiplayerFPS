@@ -4,5 +4,5 @@
 	"lobbyServers":[],
 	"maxPlayers":10,
 	"physic":30,
-	"snapshot":10
+	"snapshot":30
 }

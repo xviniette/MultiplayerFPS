@@ -2,13 +2,13 @@
 (() => {
 	var isServer = (typeof module !== 'undefined' && typeof module.exports !== 'undefined');
 
-	if(isServer){
+	if (isServer) {
 		var Map = require("./Map.js");
 		var Player = require("./Player.js");
 	}
 
-	class Party{
-		constructor(json){
+	class Party {
+		constructor(json) {
 			this.players = [];
 			this.map = null;
 
@@ -17,82 +17,102 @@
 			this.init(json);
 		}
 
-		init(json){
-			for(var i in json){
+		init(json) {
+			for (var i in json) {
 				this[i] = json[i];
 			}
 		}
 
-		start(){
+		start() {
 			this.update();
-			this.snapshot();			
+			this.snapshot();
 		}
 
-		newPlayer(p){
-			p.x = 100;
-			p.y = 100;
+		getPlayer(id) {
+			for (var player of this.players) {
+				if (player.id == id) {
+					return player;
+				}
+			}
+			return false;
+		}
 
-			var pData = p.getInitData();
-			p.type = "new_player";
-			for(var player of this.players){
-				player.socket.send(JSON.stringify(pData), () => {});
+
+		addPlayer(p) {
+			if (isServer) {
+				p.x = 100;
+				p.y = 100;
+
+				var pData = p.getInitData();
+				pData.type = "new_player";
+				for (var player of this.players) {
+					player.socket.send(JSON.stringify(pData), () => {});
+				}
 			}
 
+
 			this.players.push(p);
-			p.socket.send(JSON.stringify(this.getInitData()), () => {});
+			if (isServer) {
+				p.socket.send(JSON.stringify(this.getInitData()), () => {});
+			}
 		}
 
-		removePlayer(p){
-			for(var i in this.players){
-				if(this.players[i].id == p.id){
+		removePlayer(p) {
+			for (var i in this.players) {
+				if (this.players[i].id == p.id) {
 					this.players.splice(i, 1);
 					break;
 				}
 			}
 
-			for(var player of this.players){
-				player.send(JSON.stringify({type:"remove_player", id:p.id}));
+			if (isServer) {
+				for (var player of this.players) {
+					player.socket.send(JSON.stringify({
+						type: "remove_player",
+						id: p.id
+					}));
+				}
 			}
 		}
 
-		update(){
+		update() {
 			setTimeout(() => {
 				this.update();
-			}, 1000/this.config.physic)
+			}, 1000 / this.config.physic)
 
-			for(var player of this.players){
+			for (var player of this.players) {
 				player.update();
 			}
 
 		}
 
-		snapshot(){
+		snapshot() {
 			setTimeout(() => {
 				this.snapshot();
-			}, 1000/this.config.snapshot);
+			}, 1000 / this.config.snapshot);
 
 			var snapshot = this.getSnapshotData();
-			for(var player of this.players){
+			for (var player of this.players) {
 				player.socket.send(JSON.stringify(snapshot), () => {});
 			}
 		}
 
-		getInitData(){
+		getInitData() {
 			var data = {};
 			data.type = "init";
 			//data.map = this.map.getInitData();
 			data.players = [];
-			for(var player of this.players){
+			for (var player of this.players) {
 				data.players.push(player.getInitData());
 			}
 			return data;
 		}
 
-		getSnapshotData(){
+		getSnapshotData() {
 			var data = {};
 			data.type = "snapshot";
 			data.players = [];
-			for(var player of this.players){
+			for (var player of this.players) {
 				data.players.push(player.getSnapshotData());
 			}
 			return data;

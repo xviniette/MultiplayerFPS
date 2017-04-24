@@ -29,26 +29,20 @@
 
 		update(){
 			for(var input of this.inputs){
-				this.direction = input.direction;
+				if(input.direction){
+					this.direction = input.direction;
+				}
 
 				if(input.u){
 					this.x += Math.cos(this.direction) * this.speed;
 					this.y += Math.sin(this.direction) * this.speed;
 				}
 			}
+			this.inputs = [];
 		}
 
 		addInputs(inputs){
 			this.inputs.push(inputs);
-		}
-
-		getPlayer(id){
-			for(var player of this.players){
-				if(player.id == id){
-					return player;
-				}
-			}
-			return false;
 		}
 
 		getInitData(){

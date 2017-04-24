@@ -1,0 +1,140 @@
+<canvas id="canvas" width="600" height="400" style="border:1px solid black"></canvas>
+<script src="../server/server/Map.js"></script>
+<script src="../server/server/Player.js"></script>
+<script src="../server/server/Party.js"></script>
+<script src="./Key.js"></script>
+<script>
+    (function () {
+        var canvas = document.querySelector("#canvas");
+        var ctx = canvas.getContext("2d");
+
+        var party = null;
+
+        var id = null;
+        var mouse = {x:0, y:0};
+
+        canvas.addEventListener("mousemove", (e) => {
+            mouse.x = e.offsetX;
+            mouse.y = e.offsetY;
+        });
+
+
+        var ws = new WebSocket("ws://127.0.0.1:54321");
+
+        ws.onopen = function () {
+            ws.send(JSON.stringify({
+                type: "join",
+                name: "Joueur " + Math.floor(Math.random() * 1000)
+            }));
+
+            setInterval(() => {
+                ws.send(JSON.stringify({
+                    type: "ping",
+                    datetime: Date.now()
+                }))
+            }, 1000 * 2);
+        }
+
+        ws.onmessage = function (event) {
+            var msg = JSON.parse(event.data);
+
+            switch (msg.type) {
+                case "ping":
+                    // console.log("PING", Date.now() - msg.datetime, "ms");
+                    break;
+                case "init":
+                    var players = [];
+                    for (var player of msg.players) {
+                        players.push(new Player(player));
+                    }
+                    var map = new Map(msg.map);
+                    party = new Party(msg);
+                    party.players = players;
+                    party.map = map;
+                    update();
+                    break;
+
+                case "snapshot":
+                    for (var player of msg.players) {
+                        for (var p of party.players) {
+                            if (p.id == player.id) {
+                                p.init(player);
+                                break;
+                            }
+                        }
+                    }
+                    break;
+
+                case "new_player":
+                    party.addPlayer(new Player(msg));
+                    break;
+
+                case "remove_player":
+                    party.removePlayer({id:msg.id});
+                    break;
+
+                case "id":
+                    id = msg.id;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        var update = function () {
+            if(!id) return;
+            var inputs = {};
+
+            var player = party.getPlayer(id);
+            if(!player) return;
+            inputs.direction = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            
+            if(KeyManager.isDown("up")){
+                inputs.u = true;
+            }
+
+            if(KeyManager.isDown("down")){
+                inputs.d = true;
+            }
+
+            if(KeyManager.isDown("left")){
+                inputs.l = true;
+            }
+
+            if(KeyManager.isDown("right")){
+                inputs.r = true;
+            }
+
+
+            ws.send(JSON.stringify({type:"inputs", inputs:inputs}));
+
+            setTimeout(() => {
+                update();
+            }, 1000/party.config.physic);
+        }
+
+        var render = function () {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!party) {
+                requestAnimationFrame(render);
+                return;
+            }
+
+            for (var player of party.players) {
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.lineTo(player.x + Math.cos(player.direction) * 1.5 * player.radius, player.y + Math.sin(
+                    player.direction) * 1.5 * player.radius)
+                ctx.stroke();
+                ctx.font = "24px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(player.name, player.x, player.y - player.radius * 2 - 24);
+            }
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    })();
+</script>

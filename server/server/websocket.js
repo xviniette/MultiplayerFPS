@@ -9,8 +9,9 @@ module.exports = function (app, wss) {
                 case "join":
                 var player = new Player({id:Math.floor(Math.random() * 10000), name: (msg.name ?  msg.name : "New player"), socket:ws});
                 ws.player = player;
+                ws.send(JSON.stringify({type:"id", id:player.id}));
 
-                Party.newPlayer(player);
+                Party.addPlayer(player);
                 break;
                 case "inputs":
                 if(!ws.player){
@@ -24,9 +25,8 @@ module.exports = function (app, wss) {
             }
         });
 
-        ws.on('disconnect', () => {
-            console.log("xD");
-            Party.removePlayer(ws.player.id);
+        ws.on('close', function(){
+            Party.removePlayer(ws.player)
         });
     });
 }
