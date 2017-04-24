@@ -1,0 +1,6 @@
+{
+	"PORT":54321,
+	"password":null,
+	"lobbyServers":[],
+	"maxPlayers":10
+}
