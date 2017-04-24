@@ -51,6 +51,7 @@
                     party = new Party(msg);
                     party.players = players;
                     party.map = map;
+                    console.log(party);
                     update();
                     break;
 
@@ -83,25 +84,28 @@
 
         var update = function () {
             if(!id) return;
+
+            var tilesize = Math.min(canvas.width/party.map.tiles.length, canvas.height/party.map.tiles[0].length);
+
             var inputs = {};
 
             var player = party.getPlayer(id);
             if(!player) return;
-            inputs.direction = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            inputs.direction = Math.atan2(mouse.y - player.y * tilesize, mouse.x - player.x * tilesize);
             
-            if(KeyManager.isDown("up")){
+            if(KeyManager.isDown("up") || KeyManager.isDown("z") || KeyManager.isDown("w")){
                 inputs.u = true;
             }
 
-            if(KeyManager.isDown("down")){
+            if(KeyManager.isDown("down") || KeyManager.isDown("s")){
                 inputs.d = true;
             }
 
-            if(KeyManager.isDown("left")){
+            if(KeyManager.isDown("left") || KeyManager.isDown("q") || KeyManager.isDown("a")){
                 inputs.l = true;
             }
 
-            if(KeyManager.isDown("right")){
+            if(KeyManager.isDown("right") || KeyManager.isDown("d")){
                 inputs.r = true;
             }
 
@@ -119,19 +123,31 @@
                 requestAnimationFrame(render);
                 return;
             }
+            var tilesize = Math.min(canvas.width/party.map.tiles.length, canvas.height/party.map.tiles[0].length);
 
+            //map
+            for(var i in party.map.tiles){
+                for(var j in party.map.tiles[i]){
+                    if(party.map.tiles[i][j]){
+                        ctx.fillRect(i * tilesize, j * tilesize, tilesize, tilesize);
+                    }
+                    ctx.strokeRect(i * tilesize, j * tilesize, tilesize, tilesize);
+                }
+            }
+
+            //players
             for (var player of party.players) {
                 ctx.beginPath();
-                ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI);
+                ctx.arc(player.x * tilesize, player.y * tilesize, player.radius * tilesize, 0, 2 * Math.PI);
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.moveTo(player.x, player.y);
-                ctx.lineTo(player.x + Math.cos(player.direction) * 1.5 * player.radius, player.y + Math.sin(
-                    player.direction) * 1.5 * player.radius)
+                ctx.moveTo(player.x * tilesize, player.y * tilesize);
+                ctx.lineTo(player.x * tilesize + Math.cos(player.direction) * 1.5 * player.radius * tilesize, player.y * tilesize + Math.sin(
+                    player.direction) * 1.5 * player.radius * tilesize)
                 ctx.stroke();
                 ctx.font = "24px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(player.name, player.x, player.y - player.radius * 2 - 24);
+                ctx.fillText(player.name, player.x * tilesize, player.y * tilesize - player.radius * 2 - 24);
             }
             requestAnimationFrame(render);
         }

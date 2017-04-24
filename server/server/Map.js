@@ -22,6 +22,20 @@
 				objects:this.objects
 			}
 		}
+
+		generate(width, height, ratio){
+			this.tiles = [];
+			for(var i = 0; i < width; i++){
+				this.tiles[i] = [];
+				for(var j = 0; j < height; j++){
+					if(Math.random() < ratio){
+						this.tiles[i][j] = 1;
+					}else{
+						this.tiles[i][j] = 0;
+					}
+				}
+			}
+		}
 	}
 
 	isServer ? module.exports = Map : window.Map = Map;

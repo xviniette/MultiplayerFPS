@@ -26,6 +26,8 @@
 		start() {
 			this.update();
 			this.snapshot();
+			this.map = new Map();
+			this.map.generate(20, 20, 0.3);
 		}
 
 		getPlayer(id) {
@@ -40,8 +42,8 @@
 
 		addPlayer(p) {
 			if (isServer) {
-				p.x = 100;
-				p.y = 100;
+				p.x = 1;
+				p.y = 1;
 
 				var pData = p.getInitData();
 				pData.type = "new_player";
@@ -100,7 +102,7 @@
 		getInitData() {
 			var data = {};
 			data.type = "init";
-			//data.map = this.map.getInitData();
+			data.map = this.map.getInitData();
 			data.players = [];
 			for (var player of this.players) {
 				data.players.push(player.getInitData());
