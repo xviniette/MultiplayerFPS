@@ -1,4 +1,4 @@
-<canvas id="canvas" width="600" height="400" style="border:1px solid black"></canvas>
+<canvas id="canvas" width="800" height="800" style="border:1px solid black"></canvas>
 <script src="../server/server/Map.js"></script>
 <script src="../server/server/Player.js"></script>
 <script src="../server/server/Party.js"></script>
@@ -43,23 +43,26 @@
                     // console.log("PING", Date.now() - msg.datetime, "ms");
                     break;
                 case "init":
+                    party = new Party(msg);
                     var players = [];
                     for (var player of msg.players) {
+                    	player.party = party;
                         players.push(new Player(player));
                     }
                     var map = new Map(msg.map);
-                    party = new Party(msg);
+                    console.log(msg);
                     party.players = players;
                     party.map = map;
-                    console.log(party);
                     update();
                     break;
 
                 case "snapshot":
+                	var time = Date.now();
                     for (var player of msg.players) {
                         for (var p of party.players) {
                             if (p.id == player.id) {
-                                p.init(player);
+                            	player.time = time;
+                            	p.positions.push(player);
                                 break;
                             }
                         }
@@ -107,9 +110,12 @@
 
             if(KeyManager.isDown("right") || KeyManager.isDown("d")){
                 inputs.r = true;
-            }
+            }	
 
-
+            inputs.id = player.nbInput;
+            player.nbInput++;
+            player.addInputs(inputs);
+            player.update();
             ws.send(JSON.stringify({type:"inputs", inputs:inputs}));
 
             setTimeout(() => {
@@ -134,9 +140,11 @@
                     ctx.strokeRect(i * tilesize, j * tilesize, tilesize, tilesize);
                 }
             }
+            var interp = Date.now() - (1000/party.config.snapshot) * 1.5;
 
             //players
             for (var player of party.players) {
+            	player.interpolate(interp);
                 ctx.beginPath();
                 ctx.arc(player.x * tilesize, player.y * tilesize, player.radius * tilesize, 0, 2 * Math.PI);
                 ctx.stroke();

@@ -3,6 +3,6 @@
 	"password":null,
 	"lobbyServers":[],
 	"maxPlayers":10,
-	"physic":30,
-	"snapshot":30
+	"physic":60,
+	"snapshot":20
 }

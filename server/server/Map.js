@@ -23,6 +23,13 @@
 			}
 		}
 
+		isBlock(x, y){
+			if(this.tiles[x] != undefined && this.tiles[x][y] != undefined && this.tiles[x][y] == 0){
+				return false;
+			}
+			return true;
+		}
+
 		generate(width, height, ratio){
 			this.tiles = [];
 			for(var i = 0; i < width; i++){

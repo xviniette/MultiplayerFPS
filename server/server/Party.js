@@ -27,7 +27,7 @@
 			this.update();
 			this.snapshot();
 			this.map = new Map();
-			this.map.generate(20, 20, 0.3);
+			this.map.generate(20, 20, 0.1);
 		}
 
 		getPlayer(id) {
@@ -52,14 +52,16 @@
 				}
 			}
 
-
+			p.party = this;
 			this.players.push(p);
+
 			if (isServer) {
 				p.socket.send(JSON.stringify(this.getInitData()), () => {});
 			}
 		}
 
 		removePlayer(p) {
+			p.party = null;
 			for (var i in this.players) {
 				if (this.players[i].id == p.id) {
 					this.players.splice(i, 1);
@@ -85,7 +87,6 @@
 			for (var player of this.players) {
 				player.update();
 			}
-
 		}
 
 		snapshot() {
@@ -107,6 +108,7 @@
 			for (var player of this.players) {
 				data.players.push(player.getInitData());
 			}
+			data.config = this.config;
 			return data;
 		}
 

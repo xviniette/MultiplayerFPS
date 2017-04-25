@@ -4,6 +4,8 @@
 
 	class Player {
 		constructor(json) {
+			this.party = null;
+
 			this.id = 1;
 			this.name = "New player";
 
@@ -11,12 +13,15 @@
 			this.y = 0;
 
 			this.direction = 0;
-			this.speed = 0.01;
-			this.radius = 0.2;
+			this.speed = 0.1;
+			this.radius = 0.25;
 
 			this.inputs = [];
+			this.nbInput = 0;
 
 			this.socket = null;
+
+			this.positions = [];
 
 			this.init(json);
 		}
@@ -59,8 +64,30 @@
 					this.x += Math.cos(angle) * this.speed;
 					this.y += Math.sin(angle) * this.speed;
 				}
+
+				if(!isServer){
+					var snapshotData = this.getSnapshotData();
+					snapshotData.nbInput = input.id;
+					this.positions.push(snapshotData);					
+				}else{
+					this.nbInput = input.id;
+				}
 			}
 			this.inputs = [];
+		}
+
+		interpolate(time){
+			for(var i = 0; i < this.positions.length - 1; i++){
+				if(time >= this.positions[i].time && time < this.positions[i + 1].time){
+					var ratio = (time - this.positions[i].time)/(this.positions[i + 1].time - this.positions[i].time); 
+					var attributes = ["x", "y", "direction"];
+					for(var attr of attributes){
+						this[attr] = ratio * (this.positions[i + 1][attr] - this.positions[i][attr]) + this.positions[i][attr];
+					}
+					this.positions.splice(0, Math.max(0, i - 1));
+					return;
+				}
+			}
 		}
 
 		addInputs(inputs) {
@@ -84,7 +111,8 @@
 				id: this.id,
 				x: this.x,
 				y: this.y,
-				direction: this.direction
+				direction: this.direction,
+				input:this.nbInput
 			}
 		}
 	}
