@@ -4,5 +4,7 @@
 	"lobbyServers":[],
 	"maxPlayers":10,
 	"physic":60,
-	"snapshot":20
+	"snapshot":60,
+	"event":1,
+	"respawnTime":1000
 }

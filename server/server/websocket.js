@@ -17,7 +17,7 @@ module.exports = function (app, wss) {
                 if(!ws.player){
                     return;
                 }
-                Party.getPlayer(ws.player.id).addInputs(msg.inputs);
+                Party.getPlayer(ws.player.id).inputs.push(msg.inputs);
                 break;
                 case "ping":
                     ws.send(JSON.stringify({type:"ping", datetime:msg.datetime}));

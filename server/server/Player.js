@@ -17,11 +17,15 @@
 			this.radius = 0.25;
 
 			this.inputs = [];
+			this.lastInput = null;
+
 			this.nbInput = 0;
 
 			this.socket = null;
 
 			this.positions = [];
+
+			this.alive = false;
 
 			this.init(json);
 		}
@@ -32,8 +36,8 @@
 			}
 		}
 
-		update() {
-			for (var input of this.inputs) {
+		update(inputs = []) {
+			for (var input of inputs) {
 				if (input.direction) {
 					this.direction = input.direction;
 				}
@@ -43,21 +47,11 @@
 					l: 0
 				};
 
-				if (input.u) {
-					deplacementVector.f += 1;
-				}
+				if (input.u) deplacementVector.f += 1;
+				if (input.d) deplacementVector.f -= 1;
+				if (input.r) deplacementVector.l += 1;
+				if (input.l) deplacementVector.l -= 1;
 
-				if (input.d) {
-					deplacementVector.f -= 1;
-				}
-
-				if (input.r) {
-					deplacementVector.l += 1;
-				}
-
-				if (input.l) {
-					deplacementVector.l -= 1;
-				}
 
 				if (deplacementVector.f != 0 || deplacementVector.l != 0) {
 					var angle = this.direction + Math.atan2(deplacementVector.l, deplacementVector.f);
@@ -65,15 +59,89 @@
 					this.y += Math.sin(angle) * this.speed;
 				}
 
+				if (input.s && (this.lastInput == null || !this.lastInput.s)){
+					var shoot = this.shoot(this.x, this.y, this.direction);
+					for(var player of shoot.players){
+						this.party.events.push({
+							type:"kill",
+							killer:this.id,
+							killed:player.id
+						});
+						player.killed();
+					}
+				} 
+
+
 				if(!isServer){
 					var snapshotData = this.getSnapshotData();
-					snapshotData.nbInput = input.id;
 					this.positions.push(snapshotData);					
 				}else{
 					this.nbInput = input.id;
 				}
+				this.lastInput = input;
 			}
-			this.inputs = [];
+			return inputs.length;
+		}
+
+		respawn(){
+			if(this.party == null){
+				return;
+			}
+			var spawn = this.party.map.getRandomSpawn();
+
+			for(var attr in spawn){
+				this[attr] = spawn[attr];
+			}
+
+			console.log(this.x, this.y);
+
+			this.alive = true;
+		}
+
+		shoot(x, y, direction){
+			var map = this.party.map;
+			var players = this.party.players;
+
+			var shootStep = 0.05;
+
+			var shootedPlayers = [];
+			while(true){
+				x += Math.cos(direction) * shootStep;
+				y += Math.sin(direction) * shootStep;
+				for(var player of players){
+					if(player.id == this.id){
+						continue;
+					}
+					if(Math.sqrt(Math.pow(player.x - x, 2) + Math.pow(player.y - y, 2)) < player.radius){
+						var isIn = false;
+						for(var p of shootedPlayers){
+							if(p.id == player.id){
+								isIn = true;
+								break;
+							}
+						}
+						if(!isIn){
+							shootedPlayers.push(player);
+						}
+					}
+				}
+
+				if(map.isBlock(Math.floor(x), Math.floor(y))){
+					return {
+						players:shootedPlayers,
+						x:x,
+						y:y
+					}
+				}
+			}
+		}
+
+		killed(){
+			this.alive = false;
+
+			setTimeout(() => {
+				this.respawn();
+			}, this.party.config.respawnTime);
 		}
 
 		interpolate(time){
@@ -90,14 +158,45 @@
 			}
 		}
 
-		addInputs(inputs) {
-			this.inputs.push(inputs);
+		reconciliation(snapshot){
+			for(var i in this.positions){
+				if(this.positions[i].input == snapshot.input){
+					var isSame = true;
+					for(var attr in snapshot){
+						console.log()
+						if(snapshot[attr] != this.positions[i][attr]){
+							console.log(attr, this.positions[i][attr], snapshot[attr]);
+							isSame = false;
+							break;
+						}
+					}
+
+					if(!isSame){
+						this.x = snapshot.x;
+						this.y = snapshot.y;
+						this.direction = snapshot.direction;
+					}
+
+					for(var j in this.inputs){
+						if(this.inputs[j].id == snapshot.input){
+							this.inputs.splice(0, j);
+							break;						
+						}
+					}
+
+					this.update(this.inputs);
+
+					this.positions.splice(0, i);
+					return;
+				}
+			}
 		}
 
 		getInitData() {
 			return {
 				id: this.id,
 				name: this.name,
+				alive: this.alive,
 				x: this.x,
 				y: this.y,
 				direction: this.direction,
@@ -109,6 +208,7 @@
 		getSnapshotData() {
 			return {
 				id: this.id,
+				alive: this.alive,
 				x: this.x,
 				y: this.y,
 				direction: this.direction,

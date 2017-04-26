@@ -43,6 +43,14 @@
 				}
 			}
 		}
+
+		getRandomSpawn(){
+			return {
+				x:Math.random() * (this.tiles.length - 1),
+				y:Math.random() * (this.tiles[0].length - 1),
+				direction:Math.random() * Math.PI * 2
+			}
+		}
 	}
 
 	isServer ? module.exports = Map : window.Map = Map;

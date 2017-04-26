@@ -12,6 +12,8 @@
 			this.players = [];
 			this.map = null;
 
+			this.events = [];
+
 			this.config = {};
 
 			this.init(json);
@@ -26,6 +28,7 @@
 		start() {
 			this.update();
 			this.snapshot();
+			this.event();
 			this.map = new Map();
 			this.map.generate(20, 20, 0.1);
 		}
@@ -42,14 +45,15 @@
 
 		addPlayer(p) {
 			if (isServer) {
-				p.x = 1;
-				p.y = 1;
-
 				var pData = p.getInitData();
 				pData.type = "new_player";
 				for (var player of this.players) {
 					player.socket.send(JSON.stringify(pData), () => {});
 				}
+
+				setTimeout(() => {
+					p.respawn();
+				}, this.config.respawnTime);
 			}
 
 			p.party = this;
@@ -85,7 +89,21 @@
 			}, 1000 / this.config.physic)
 
 			for (var player of this.players) {
-				player.update();
+				var executedInputs = player.update(player.inputs);
+				player.inputs.splice(0, executedInputs);
+			}
+		}
+
+		event(){
+			setTimeout(() => {
+				this.event();
+			}, 1000 / this.config.event);
+
+			if(this.events.length > 0){
+				for (var player of this.players) {
+					player.socket.send(JSON.stringify({type:"event", events:this.events}), () => {});
+				}
+				this.events = [];
 			}
 		}
 
