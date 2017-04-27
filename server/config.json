@@ -6,5 +6,5 @@
 	"physic":60,
 	"snapshot":60,
 	"event":1,
-	"respawnTime":1000
+	"respawnTime":1
 }

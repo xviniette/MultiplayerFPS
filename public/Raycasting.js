@@ -1,7 +1,6 @@
 "use strict";
-class Raycasting
-{
-	constructor(canvas, json){
+class Raycasting {
+	constructor(canvas, json) {
 		this.canvas = canvas;
 		this.ctx = this.canvas.getContext("2d");
 
@@ -14,77 +13,126 @@ class Raycasting
 		this.nbRays = this.canvas.width;
 
 		this.projectionPlane = {
-			x:this.canvas.width,
-			y:this.canvas.height
+			x: this.canvas.width,
+			y: this.canvas.height
 		}
 
 		this.camera = {
-			x:0,
-			y:0,
-			direction:0
+			x: 0,
+			y: 0,
+			direction: 0
 		}
 
 		this.init(json);
 	}
 
-	init(json){
-		for(var i in json){
+	init(json) {
+		for (var i in json) {
 			this[i] = json[i];
 		}
 	}
 
-	projectionCenter(){
+	projectionCenter() {
 		return {
-			x:this.projectionPlane.x/2,
-			y:this.projectionPlane.y/2,
+			x: this.projectionPlane.x / 2,
+			y: this.projectionPlane.y / 2,
 		};
 	}
 
-	getIntervalAngle(){
-		return this.FOV/(this.projectionPlane.x - 1);
+	getIntervalAngle() {
+		return this.FOV / (this.projectionPlane.x - 1);
 	}
 
-	viewDistance(){
-		return (this.canvas.width/2) / Math.tan((this.FOV) / 2);
+	viewDistance() {
+		return (this.canvas.width / 2) / Math.tan((this.FOV) / 2);
 	}
 
-	getRays(){
+	getRays() {
 		var rays = [];
 
-		if(this.projectionPlane.x == 1){
+		if (this.projectionPlane.x == 1) {
 			rays.push(this.getRay(this.camera.x, this.camera.y, this.camera.direction));
 			return rays;
 		}
 
-		for(var i = 0; i < this.projectionPlane.x; i++){
-			var angle = this.camera.direction - this.FOV/2 + this.getIntervalAngle() * i;
+		for (var i = 0; i < this.projectionPlane.x; i++) {
+			var angle = this.camera.direction - this.FOV / 2 + this.getIntervalAngle() * i;
 			rays.push(this.getRay(this.camera.x, this.camera.y, angle));
 		}
 		return rays;
 	}
 
-	getRay(x, y, angle){
+	getRay(x, y, angle) {
 		var twoPI = Math.PI * 2;
 		angle %= twoPI;
 		if (angle < 0) angle += twoPI;
 
+		// return {
+		// 	x:x + Math.cos(angle) * 5,
+		// 	y:y + Math.sin(angle) * 5,
+		// }
 
+		//Horizontale
 		var first = {};
-		if(angle > Math.PI){
-			first.y = Math.floor(y) * 1 - 0.000001;
+		if (angle > Math.PI) {
+			first.y = Math.floor(y) - 0.000001;
 			var Ya = -1;
-		}else{
-			first.y = Math.floor(y) * 1 + 1;
+		} else {
+			first.y = Math.ceil(y);
 			var Ya = 1;
 		}
 
-		first.x = x + (y - first.y)/Math.tan(angle);
 
-		var Xa = 1/Math.tan(angle);
+		first.x = x + (y - first.y) / Math.tan(angle);
 
-		console.log(first.x, first.y);
+		return first;
 
-		return {x:first.x, y:first.y};
+		var Xa = 1 / Math.tan(angle);
+
+		var point = null;
+		for (var i = 0;; i++) {
+			var cx = first.x + i * Xa;
+			var cy = first.y + i * Ya;
+			if (this.party.map.isBlock(cx, cy)) {
+				point = {
+					x: cx,
+					y: cy
+				};
+				break;
+			}
+		}
+
+		//Verticale
+		var first = {};
+		if (angle > Math.PI * 1.5 || angle < Math.PI * 0.5) {
+			first.x = Math.ceil(x);
+			var Xa = 1;
+		} else {
+			first.x = Math.floor(x) - 0.000001;
+			var Xa = -1;
+		}
+
+		first.y = y + (x - first.x) * Math.tan(angle);
+		var Ya = Math.tan(angle);
+
+		for (var i = 0;; i++) {
+			var cx = first.x + i * Xa;
+			var cy = first.y + i * Ya;
+			if (this.party.map.isBlock(cx, cy)) {
+				if (this.distance(x, y, cx, cy) < this.distance(x, y, point.x, point.y)) {
+					point = {
+						x: cx,
+						y: cy
+					};
+				}
+				break;
+			}
+		}
+
+		return {
+			x: point.x,
+			y: point.y
+		};
 	}
 
 	//http://zupi.free.fr/PTuto/index.php?ch=ptuto&p=ray#52
@@ -201,7 +249,7 @@ class Raycasting
 	// 	}
 	// }
 
-	render(){
+	render() {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
 		var rays = this.getRays();
@@ -267,16 +315,16 @@ class Raycasting
 		// 		this.ctx.fillStyle = "yellow";
 		// 		this.ctx.fillRect(xPosition, this.canvas.height * 0.5 - height * 0.5, width, height);
 
-  //               this.ctx.font = "24px Arial";
-  //               this.ctx.textAlign = "center";
-  //               this.ctx.fillText(draw.player.name, xPosition, this.canvas.height * 0.5 - height * 0.5);
+		//               this.ctx.font = "24px Arial";
+		//               this.ctx.textAlign = "center";
+		//               this.ctx.fillText(draw.player.name, xPosition, this.canvas.height * 0.5 - height * 0.5);
 
 		// 		// ctx3D.drawImage(images.lampadaire, 0, 0, images.lampadaire.width, images.lampadaire.height, xPosition, canvas3D.height/2 - height/2, height/images.lampadaire.height * images.lampadaire.width, height);
 		// 	}
 		// }
 	}
 
-	distance(sx, sy, x, y){
+	distance(sx, sy, x, y) {
 		return Math.sqrt(Math.pow(sx - x, 2) + Math.pow(sy - y, 2));
 	}
 

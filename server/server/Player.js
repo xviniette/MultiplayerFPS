@@ -93,8 +93,6 @@
 				this[attr] = spawn[attr];
 			}
 
-			console.log(this.x, this.y);
-
 			this.alive = true;
 		}
 
