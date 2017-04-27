@@ -24,6 +24,8 @@
 		}
 
 		isBlock(x, y){
+			x = Math.floor(x);
+			y = Math.floor(y);
 			if(this.tiles[x] != undefined && this.tiles[x][y] != undefined && this.tiles[x][y] == 0){
 				return false;
 			}

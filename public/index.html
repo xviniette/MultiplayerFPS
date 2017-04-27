@@ -1,4 +1,4 @@
-<canvas id="canvas" width="300" height="300" style="border:1px solid black"></canvas>
+<canvas id="canvas" width="800" height="600" style="border:1px solid black"></canvas>
 <canvas id="canvas3D" width="800" height="800" style="border:1px solid black"></canvas>
 <script src="../server/server/Map.js"></script>
 <script src="../server/server/Player.js"></script>
@@ -14,7 +14,7 @@
         var party = null;
 
         var raycasting = new Raycasting(canvas3D);
-        raycasting.nbRays = canvas3D.width;
+        raycasting.projectionPlane.x = 1;        
 
         var id = null;
         var mouse = {x:0, y:0, isDown:false};
@@ -66,7 +66,7 @@
                     console.log(msg);
                     party.players = players;
                     party.map = map;
-        raycasting.party = party;
+                    raycasting.party = party;
                     update();
                     break;
 
@@ -145,12 +145,11 @@
 
         var render = function () {
 
-         if (!party) {
+           if (!party) {
             requestAnimationFrame(render);
             return;
         }
 
-        var rays = [];
         for(var player of party.players){
             if(player.id == id){
                 raycasting.camera.x = player.x;
@@ -182,6 +181,8 @@
             var interp = Date.now() - (1000/party.config.snapshot) * 1.5;
 
             //players
+            var rays = raycasting.getRays();
+
             for (var player of party.players) {
                 if(!player.alive) continue;
                 player.interpolate(interp);
@@ -197,6 +198,15 @@
                 ctx.textAlign = "center";
                 ctx.fillText(player.name, player.x * tilesize, player.y * tilesize - player.radius * 2 - 24);
 
+                    ctx.strokeStyle = "yellow";
+                
+                for(var ray of rays){
+                    ctx.beginPath();
+                    ctx.moveTo(player.x * tilesize, player.y * tilesize);
+                    ctx.lineTo(ray.x * tilesize, ray.y * tilesize)
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = "black";
             }
             requestAnimationFrame(render);
         }
