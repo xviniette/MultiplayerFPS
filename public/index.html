@@ -1,5 +1,5 @@
-<canvas id="canvas" width="800" height="600" style="border:1px solid black"></canvas>
-<canvas id="canvas3D" width="800" height="800" style="border:1px solid black"></canvas>
+<canvas id="canvas" width="400" height="400" style="border:1px solid black"></canvas>
+<canvas id="canvas3D" width="600" height="400" style="border:1px solid black"></canvas>
 <script src="../server/server/Map.js"></script>
 <script src="../server/server/Player.js"></script>
 <script src="../server/server/Party.js"></script>
@@ -14,7 +14,7 @@
         var party = null;
 
         var raycasting = new Raycasting(canvas3D);
-        raycasting.projectionPlane.x = 1;        
+        // raycasting.projectionPlane.x = 5;        
 
         var id = null;
         var mouse = {x:0, y:0, isDown:false};
@@ -76,27 +76,28 @@
                         for (var p of party.players) {
                             if (p.id == player.id) {
                               player.time = time;
-                              p.positions.push(player);
-                              p.alive = player.alive;
-                              break;
-                          }
-                      }
-                  }
-                  break;
+                             // p.positions.push(player);
+                             p.alive = player.alive;
+                             p.init(player);
+                             break;
+                         }
+                     }
+                 }
+                 break;
 
-                  case "new_player":
-                  party.addPlayer(new Player(msg));
-                  break;
+                 case "new_player":
+                 party.addPlayer(new Player(msg));
+                 break;
 
-                  case "remove_player":
-                  party.removePlayer({id:msg.id});
-                  break;
+                 case "remove_player":
+                 party.removePlayer({id:msg.id});
+                 break;
 
-                  case "id":
-                  id = msg.id;
-                  break;
-                  case "event":
-                  for(var event of msg.events){
+                 case "id":
+                 id = msg.id;
+                 break;
+                 case "event":
+                 for(var event of msg.events){
                     console.log(event);
                 }
                 break;
@@ -156,8 +157,6 @@
                 raycasting.camera.y = player.y;
                 raycasting.camera.direction = player.direction;
 
-                raycasting.map = party.map;
-
                 raycasting.render();
             }
         }
@@ -198,7 +197,7 @@
                 ctx.textAlign = "center";
                 ctx.fillText(player.name, player.x * tilesize, player.y * tilesize - player.radius * 2 - 24);
 
-                    ctx.strokeStyle = "yellow";
+                ctx.strokeStyle = "blue";
                 
                 for(var ray of rays){
                     ctx.beginPath();
@@ -210,6 +209,55 @@
             }
             requestAnimationFrame(render);
         }
-        requestAnimationFrame(render);
-    })();
+
+        function loadImages(sources, callback) {
+            var images = {};
+            var loadedImages = 0;
+            var numImages = 0;
+            for(var src in sources) {
+              numImages++;
+          }
+          for(var src in sources) {
+              images[src] = new Image();
+              images[src].onload = function() {
+                if(++loadedImages >= numImages) {
+                  callback(images);
+              }
+          };
+          images[src].src = sources[src];
+      }
+  }
+
+  loadImages({
+    wall:"http://s3.eu-central-1.amazonaws.com/adage/projects/6e65ce8c-6b54-4cbf-84e7-8642c0595a0b/files/assets/239-walls.png",
+    lampadaire:"http://s3.eu-central-1.amazonaws.com/adage/projects/6e65ce8c-6b54-4cbf-84e7-8642c0595a0b/files/assets/240-lampadaire.png"
+}, function(imgs) {
+    raycasting.textures = imgs;
+    raycasting.mapTexture = {
+        "1":{
+            image:"wall",
+            x:0,
+            y:0,
+            width:64,
+            height:64
+        },
+        "2":{
+            image:"wall",
+            x:0,
+            y:128,
+            width:64,
+            height:64
+        },
+        "3":{
+            image:"wall",
+            x:0,
+            y:192,
+            width:64,
+            height:64
+        }};
+        console.log(raycasting);
+        requestAnimationFrame(render);}
+        );
+
+})();
 </script>

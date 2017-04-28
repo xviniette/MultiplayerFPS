@@ -26,10 +26,11 @@
 		isBlock(x, y){
 			x = Math.floor(x);
 			y = Math.floor(y);
-			if(this.tiles[x] != undefined && this.tiles[x][y] != undefined && this.tiles[x][y] == 0){
-				return false;
+
+			if(this.tiles[x] == undefined || this.tiles[x][y] == undefined){
+				return 1;
 			}
-			return true;
+			return this.tiles[x][y];
 		}
 
 		generate(width, height, ratio){
@@ -38,7 +39,7 @@
 				this.tiles[i] = [];
 				for(var j = 0; j < height; j++){
 					if(Math.random() < ratio){
-						this.tiles[i][j] = 1;
+						this.tiles[i][j] = Math.ceil(Math.random() * 3);
 					}else{
 						this.tiles[i][j] = 0;
 					}
