@@ -39,7 +39,7 @@
 				this.tiles[i] = [];
 				for(var j = 0; j < height; j++){
 					if(Math.random() < ratio){
-						this.tiles[i][j] = Math.ceil(Math.random() * 3);
+						this.tiles[i][j] = Math.ceil(Math.random() * 4);
 					}else{
 						this.tiles[i][j] = 0;
 					}

@@ -1,17 +1,35 @@
 "use strict";
+
+//http://zupi.free.fr/PTuto/index.php?ch=ptuto&p=ray#52
+//http://forums.mediabox.fr/wiki/tutoriaux/flashplatform/affichage/3d/raycasting/theorie/11-sources
+//http://permadi.com/1996/05/ray-casting-tutorial-table-of-contents/
+
 class Raycasting {
 	constructor(canvas, json) {
 		this.canvas = canvas;
 		this.ctx = this.canvas.getContext("2d");
 
-		this.party = null;
 		this.map = {
-			walls:[],
-			floor:[],
-			ceiling:[]
+			wall: [],
+			floor: [],
+			ceiling: []
+		}
+		this.entities = [];
+
+		this.elements = {
+			sky:{
+				image:null,
+				color:"#83a8e2"
+			},
+			ground:{
+				image:null,
+				color:"#7a581e"
+			}
 		}
 
-		this.entities = [];
+
+		this.ceilColor = null;
+
 
 		this.FOV = 1.0472;
 
@@ -29,7 +47,7 @@ class Raycasting {
 			x: 0,
 			y: 0,
 			direction: 0,
-			height: this.projectionPlane.y/2
+			height: this.projectionPlane.y / 2
 		}
 
 		this.init(json);
@@ -53,7 +71,17 @@ class Raycasting {
 	}
 
 	viewDistance() {
-		return (this.canvas.width / 2) / Math.tan((this.FOV) / 2);
+		return (this.projectionPlane.x / 2) / Math.tan((this.FOV) / 2);
+	}
+
+	getTile(x, y, type = "wall") {
+		x = Math.floor(x);
+		y = Math.floor(y);
+		if (this.map[type] == undefined || this.map[type][x] == undefined || this.map[type][x][y] == undefined) {
+			return null;
+		}
+
+		return this.map[type][x][y];
 	}
 
 	getRays() {
@@ -80,7 +108,7 @@ class Raycasting {
 		if (angle > Math.PI) {
 			first.y = Math.floor(y) - 0.000001;
 			var Ya = -1;
-			var Xa = (1 / Math.tan(angle))*-1;
+			var Xa = (1 / Math.tan(angle)) * -1;
 
 		} else {
 			first.y = Math.ceil(y);
@@ -95,11 +123,12 @@ class Raycasting {
 		for (var i = 0;; i++) {
 			var cx = first.x + i * Xa;
 			var cy = first.y + i * Ya;
-			if (this.party.map.isBlock(cx, cy)) {
+			var tile = this.getTile(cx, cy);
+			if (tile != 0) {
 				point = {
 					x: cx,
 					y: cy,
-					ratio:cx%1
+					ratio: cx % 1
 				};
 				break;
 			}
@@ -123,12 +152,13 @@ class Raycasting {
 		for (var i = 0;; i++) {
 			var cx = first.x + i * Xa;
 			var cy = first.y + i * Ya;
-			if (this.party.map.isBlock(cx, cy)) {
+			var tile = this.getTile(cx, cy);
+			if (tile != 0) {
 				if (this.distance(x, y, cx, cy) < this.distance(x, y, point.x, point.y)) {
 					point = {
 						x: cx,
 						y: cy,
-						ratio:cy%1
+						ratio: cy % 1
 					};
 				}
 				break;
@@ -138,119 +168,94 @@ class Raycasting {
 		return {
 			x: point.x,
 			y: point.y,
-			angle:angle,
-			ratio:point.ratio
+			angle: angle,
+			ratio: point.ratio
 		};
 	}
 
-	//http://zupi.free.fr/PTuto/index.php?ch=ptuto&p=ray#52
-	//http://forums.mediabox.fr/wiki/tutoriaux/flashplatform/affichage/3d/raycasting/theorie/11-sources
-	//http://permadi.com/1996/05/ray-casting-tutorial-table-of-contents/
-
-	render(){
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		if(this.party == null) return;
-		var rays = this.getRays();
-
-		for(var i in rays){
-			var ray = rays[i];
-			var distance = this.distance(ray.x, ray.y, this.camera.x, this.camera.y) * Math.cos(this.camera.direction - ray.angle);
-
-			//WALLS
-			var height = this.viewDistance()/distance;
-			var width = this.canvas.width/this.projectionPlane.x;
-			var tile = this.party.map.isBlock(ray.x, ray.y);
-			if(tile && this.textures[this.mapTexture[tile].image]){
-				var texture = this.mapTexture[tile];
-				this.ctx.drawImage(this.textures[texture.image],
-					texture.x + ray.ratio * texture.width, texture.y,
-					width, texture.height,
-					i * width, canvas3D.height/2 - height/2,
-					width, height);
-			}else{
-				this.ctx.fillRect(i * width, this.canvas.height * 0.5 - height * 0.5, width, height);
-			}
-
-			//FLOOR
 
 
-		}
-	}
-
-/*
 	render() {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		if(this.elements.sky && this.elements.sky.color){
+			this.ctx.fillStyle = this.elements.sky.color;
+			this.ctx.fillRect(0, 0, this.projectionPlane.x, this.projectionPlane.y/2);
+		}
+
+		if(this.elements.ground && this.elements.ground.color){
+			this.ctx.fillStyle = this.elements.ground.color;
+			this.ctx.fillRect(0, this.projectionPlane.y/2, this.projectionPlane.x, this.projectionPlane.y / 2);
+		}
+
+		var toRender = [];
 
 		var rays = this.getRays();
-		var toDraws = [];
-		for(var i in rays){
+		for (var i in rays) {
 			var ray = rays[i];
-			var dist = this.distance(this.camera.x, this.camera.y, ray.x, ray.y);
-			dist = dist * Math.cos(this.camera.direction - ray.angle);
-
-			toDraws.push({
-				type:"wall",
-				ray:ray,
-				distance:dist,
-				index:i
+			toRender.push({
+				type: "wall",
+				index: i,
+				ray: ray,
+				distance: this.distance(ray.x, ray.y, this.camera.x, this.camera.y) * Math.cos(this.camera.direction - ray.angle)
 			});
 		}
 
-		var objects = this.party.players;
-		for(var object of objects){
-			var deltaAngle = Math.atan2(object.y - this.camera.y, object.x - this.camera.x) - Math.atan2((this.camera.y + Math.sin(this.camera.direction) * 10) - this.camera.y, (this.camera.x + Math.cos(this.camera.direction) * 10) - this.camera.x)
-			var d = this.distance(object.x, object.y, this.camera.x, this.camera.y) * Math.cos(deltaAngle);
-			deltaAngle += this.fov/2;
+		var twoPI = Math.PI * 2;
+		for (var entity of this.entities) {
+			var angle = Math.atan2(entity.y - this.camera.y, entity.x - this.camera.x) - Math.atan2((this.camera.y + Math.sin(this.camera.direction) * 10) - this.camera.y, (this.camera.x + Math.cos(this.camera.direction) * 10) - this.camera.x)
 
-
-			toDraws.push({
-				type:"player",
-				player:object,
-				distance:d,
-				angle:deltaAngle,
+			toRender.push({
+				type: "entity",
+				entity: entity,
+				distance: this.distance(entity.x, entity.y, this.camera.x, this.camera.y) * Math.cos(angle),
+				angle: angle
 			});
 		}
 
-		toDraws.sort((a, b) => {
-			if(a.distance < b.distance){
-				return 1;
-			}
-			return -1;
+		toRender.sort((a, b) => {
+			return (b.distance - a.distance);
 		});
 
+		for (var render of toRender) {
+			switch (render.type) {
+				case "wall":
+					var ray = render.ray;
+					var height = this.viewDistance() / render.distance;
+					var width = this.canvas.width / this.projectionPlane.x;
+					var tile = this.getTile(ray.x, ray.y);
 
-		for(var draw of toDraws){
-			if(draw.type == "wall"){
-				var ray = draw.ray;
-				var height = this.viewDistance() / draw.distance;
-				var width = this.canvas.width / this.nbRays;
+					if (tile != null && tile != 0) {
+						if (this.mapTexture[tile] && this.textures[this.mapTexture[tile].image]) {
+							var texture = this.mapTexture[tile];
+							this.ctx.drawImage(this.textures[texture.image],
+								texture.x + ray.ratio * texture.width, texture.y,
+								width, texture.height,
+								render.index * width, this.projectionPlane.y / 2 - height / 2,
+								width, height);
+						} else {
+							this.ctx.fillStyle = "black";
+							this.ctx.fillRect(render.index * width, this.projectionPlane.y * 0.5 - height * 0.5, width, height);
+						}
+					}
+					break;
 
-				this.ctx.fillStyle = "blue";
-				this.ctx.fillRect(draw.index * width, this.canvas.height * 0.5 - height * 0.5, width, height);
-
-				// ctx3D.drawImage(images.wall,
-				// 	ray.ratio * 64, 0,
-				// 	width, 64,
-				// 	draw.index * width, canvas3D.height/2 - height/2,
-				// 	width, height);
-			}
-
-			if(draw.type == "player"){
-				var height = this.viewDistance() / draw.distance;
-				var xPosition = draw.angle/this.fov * this.canvas.width;
-				var width = height * 0.5;
-
-				this.ctx.fillStyle = "yellow";
-				this.ctx.fillRect(xPosition, this.canvas.height * 0.5 - height * 0.5, width, height);
-
-		              this.ctx.font = "24px Arial";
-		              this.ctx.textAlign = "center";
-		              this.ctx.fillText(draw.player.name, xPosition, this.canvas.height * 0.5 - height * 0.5);
-
-				// ctx3D.drawImage(images.lampadaire, 0, 0, images.lampadaire.width, images.lampadaire.height, xPosition, canvas3D.height/2 - height/2, height/images.lampadaire.height * images.lampadaire.width, height);
+				case "entity":
+					var height = this.viewDistance() / render.distance * entity.height;
+					var width = entity.width != null ? entity.width * height : entity.image != null ? entity.image.width/entity.image.height * height : height * 0.5;
+					var x = ((render.angle + this.FOV / 2) / this.FOV) * this.projectionPlane.x - width/2;
+					
+					if(entity.image){
+						this.ctx.drawImage(entity.image, x, this.projectionPlane.y * 0.5 - height * 0.5, width, height);
+					}else{
+						this.ctx.fillStyle = entity.color;
+						this.ctx.fillRect(x, this.projectionPlane.y * 0.5 - height * 0.5, width, height);
+					}
+					break;
+				default:
+					break;
 			}
 		}
-	}*/
+	}
 
 	distance(sx, sy, x, y) {
 		return Math.sqrt(Math.pow(sx - x, 2) + Math.pow(sy - y, 2));

@@ -30,7 +30,7 @@
 			this.snapshot();
 			this.event();
 			this.map = new Map();
-			this.map.generate(20, 20, 0.2);
+			this.map.generate(20, 20, 0.1);
 		}
 
 		getPlayer(id) {
